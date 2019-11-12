@@ -7,7 +7,7 @@
   xmlns:iot="http://schemas.microsoft.com/appx/manifest/iot/windows10"
 	xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap mp iot uap3 rescap">
+  IgnorableNamespaces="uap mp iot uap3 rescap iot">
 
   <Identity
     Name="AdditionalRuntimesSkill-uwp"
@@ -65,5 +65,6 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <rescap:Capability Name="broadFileSystemAccess" />
+    <iot:Capability Name="systemManagement" />
   </Capabilities>
 </Package>

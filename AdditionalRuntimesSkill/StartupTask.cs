@@ -1,3 +1,4 @@
+using MistyRobotics.Common.Types;
 using MistyRobotics.SDK.Messengers;
 using Windows.ApplicationModel.Background;
 
@@ -7,7 +8,7 @@ namespace AdditionalRuntimesSkill
     {
         public void Run(IBackgroundTaskInstance taskInstance)
         {
-            RobotMessenger.LoadAndPrepareSkill(taskInstance, new MistyNativeSkill());
+            RobotMessenger.LoadAndPrepareSkill(taskInstance, new MistyNativeSkill(), SkillLogLevel.Verbose);
         }
     }
 }

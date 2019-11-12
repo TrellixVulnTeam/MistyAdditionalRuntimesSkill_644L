@@ -95,6 +95,11 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Runtime\ExternalProcess.cs" />
+    <Compile Include="Runtime\Runtime.cs" />
+    <Compile Include="Runtime\RuntimeManager.cs" />
+    <Compile Include="Runtime\StartRuntimeParameters.cs" />
+    <Compile Include="Runtime\EncodedOutputStreamWatcher.cs" />
     <Compile Include="StartupTask.cs" />
     <Compile Include="MistyNativeSkill.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -104,6 +109,17 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="AdditionalRuntimesSkill_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(ProjectDir)\Assets\Node\**\*">
+      <CopyToOutputDirectory>CopyAlways</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)\Assets\Python\**\*">
+      <CopyToOutputDirectory>CopyAlways</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(ProjectDir)\Assets\Tests\**\*">
+      <CopyToOutputDirectory>CopyAlways</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\Default.rd.xml" />
@@ -143,6 +159,12 @@
       <Version>0.8.9-beta</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <SDKReference Include="WindowsIoT, Version=10.0.17134.0">
+      <Name>Windows IoT Extensions for the UWP</Name>
+    </SDKReference>
+  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '15.0' ">
     <VisualStudioVersion>15.0</VisualStudioVersion>
   </PropertyGroup>

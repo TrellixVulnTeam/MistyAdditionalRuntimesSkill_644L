@@ -12,14 +12,17 @@ using MistyRobotics.SDK.Responses;
 using MistyRobotics.Common.Types;
 using MistyRobotics.SDK;
 using MistyRobotics.SDK.Messengers;
+using System.IO;
+using Windows.ApplicationModel;
+using Windows.Storage;
+using AdditionalRuntimesSkill.Runtime;
 
 namespace AdditionalRuntimesSkill
 {
 	internal class MistyNativeSkill : IMistySkill
 	{
-		/// <summary>
-		/// Make a local variable to hold the misty robot interface, call it whatever you want 
-		/// </summary>
+		private readonly RuntimeManager _runtimeManager = new RuntimeManager();
+
 		private IRobotMessenger _misty;
 
 		/// <summary>
@@ -33,6 +36,55 @@ namespace AdditionalRuntimesSkill
 		///   AllowedCleanupTimeInMs - How long to wait after calling OnCancel before denying messages from the skill and performing final cleanup  
 		/// </summary>
 		public INativeRobotSkill Skill { get; private set; } = new NativeRobotSkill("AdditionalRuntimesSkill", "0ff16d00-7f5c-4dad-9b6e-e832a406c117");
+
+		public MistyNativeSkill()
+		{
+			_runtimeManager.StandardOut += Runtime_StandardOut;
+			_runtimeManager.StandardErr += Runtime_StandardErr;
+			_runtimeManager.RuntimeCompleted += Runtime_Completed;
+			_runtimeManager.RuntimeCancelled += Runtime_Cancelled;
+			_runtimeManager.RuntimeFaulted += Runtime_Faulted;
+		}
+
+		private void Runtime_Cancelled(object sender, string e)
+		{
+			if (_misty != null)
+			{
+				_misty.SendDebugMessage($"Runtime '{e}' was cancelled.", null);
+			}
+		}
+
+		private void Runtime_Faulted(object sender, (string, Exception) e)
+		{
+			if (_misty != null)
+			{
+				_misty.SendDebugMessage($"Runtime '{e.Item1}' faulted: {e.Item2}\n{e.Item2.StackTrace}", null);
+			}
+		}
+
+		private void Runtime_Completed(object sender, (string, uint) e)
+		{
+			if (_misty != null)
+			{
+				_misty.SendDebugMessage($"Runtime '{e.Item1}' completed with exit code {e.Item2}", null);
+			}
+		}
+
+		private void Runtime_StandardErr(object sender, (string, string) e)
+		{
+			if (_misty != null)
+			{
+				_misty.SendDebugMessage($"[{e.Item1.ToUpper()}][ERR] {e.Item2}", null);
+			}
+		}
+
+		private void Runtime_StandardOut(object sender, (string, string) e)
+		{
+			if (_misty != null)
+			{
+				_misty.SendDebugMessage($"[{e.Item1.ToUpper()}][OUT] {e.Item2}", null);
+			}
+		}
 
 		/// <summary>
 		///	This method is called by the wrapper to set your robot interface
@@ -51,8 +103,20 @@ namespace AdditionalRuntimesSkill
 		/// <param name="parameters"></param>
 		public void OnStart(object sender, IDictionary<string, object> parameters)
 		{
-			//TODO Put your code here and update the summary above
-			_misty.ChangeLED(255, 36, 0, OnResponse);
+			HandleStartRuntimeRequest(new Dictionary<string, object>
+			{
+				{ "RuntimeName", "Python" },
+				{ "Directory", "pytest" },
+				{ "EntryPoint", "justins_test.py" }
+			});
+		}
+
+		private void Misty_UserEventReceived(object sender, IUserEvent e)
+		{
+			if (e.EventName == "Runtime.Start")
+			{
+				HandleStartRuntimeRequest(e.Data);
+			}
 		}
 
 		/// <summary>
@@ -100,6 +164,34 @@ namespace AdditionalRuntimesSkill
 		public void OnResponse(IRobotCommandResponse response)
 		{
 			Debug.WriteLine("Response: " + response.ResponseType.ToString());
+		}
+
+		private async void HandleStartRuntimeRequest(IDictionary<string, object> dict)
+		{
+			IReadOnlyList<string> validationErrors = StartRuntimeParameters.Validate(dict);
+			if (validationErrors.Count > 0)
+			{
+				string message = "StartRuntime request failed validation: \n" + string.Join("\n", validationErrors);
+				await _misty.SendDebugMessageAsync(message);
+			}
+			else
+			{
+				StartRuntimeParameters parameters = StartRuntimeParameters.Extract(dict);
+				try
+				{
+					_runtimeManager.StartRuntime(parameters.RuntimeName, parameters.Directory, parameters.EntryPoint);
+				}
+				catch (Exception ex)
+				{
+					SendDebugExceptionAsync("Unexpected exception occurred while trying to start runtime.", ex);
+				}
+			}
+		}
+
+		private async void SendDebugExceptionAsync(string message, Exception ex)
+		{
+			await _misty.SendDebugMessageAsync(message);
+			await _misty.SendDebugMessageAsync($"{ex}\n{ex.StackTrace}");
 		}
 
 		#region IDisposable Support
